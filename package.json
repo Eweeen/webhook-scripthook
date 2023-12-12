@@ -1,0 +1,16 @@
+{
+  "name": "discord-webhook",
+  "module": "index.ts",
+  "type": "module",
+  "devDependencies": {
+    "bun-types": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@elysiajs/cron": "^0.7.0",
+    "axios": "^1.6.2",
+    "date-fns": "^2.30.0"
+  }
+}
