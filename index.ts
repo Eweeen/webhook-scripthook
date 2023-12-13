@@ -2,6 +2,7 @@ import { Elysia } from "elysia";
 import { cron } from "@elysiajs/cron";
 import axios from "axios";
 import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 /**
  * Cron job to check ScriptHookV version
@@ -9,7 +10,7 @@ import { format } from "date-fns";
  */
 const cronJob = {
   name: "Check ScriptHookV version",
-  pattern: "0 0 17 * * *",
+  pattern: "0 0 16 * * *",
   run() {
     checkScriptHookVersion();
   },
@@ -23,10 +24,10 @@ new Elysia().use(cron(cronJob)).listen(4000);
  * @returns
  */
 const checkScriptHookVersion = async (): Promise<void> => {
-  console.log("Check script hook version");
-  const url = "http://dev-c.com/gtav/scripthookv/";
+  const date = format(new Date(), "dd MMMM yyyy HH:mm:ss", { locale: fr });
+  console.log(`${date} | Check script hook version`);
 
-  const response = await axios.get(url);
+  const response = await axios.get("http://dev-c.com/gtav/scripthookv/");
 
   const html = response.data;
   const version: string | undefined = html.match(/v\d+\.\d+\.\d+/g)[0];
