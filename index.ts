@@ -2,21 +2,25 @@ import { Elysia } from "elysia";
 import { cron } from "@elysiajs/cron";
 import axios from "axios";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale";
 
 /**
  * Cron job to check ScriptHookV version
  * Runs every day at 17:00
  */
-const cronJob = {
-  name: "Check ScriptHookV version",
-  pattern: "0 0 16 * * *",
-  run() {
-    checkScriptHookVersion();
-  },
+const cronJob = (pattern: string) => {
+  return {
+    name: "Check ScriptHookV version",
+    pattern,
+    run() {
+      checkScriptHookVersion();
+    },
+  };
 };
 
-new Elysia().use(cron(cronJob)).listen(4000);
+new Elysia()
+  .use(cron(cronJob("0 0 17-21 * * 1-5")))
+  .use(cron(cronJob("0 0 12-22 * * 6,7")))
+  .listen(4000);
 
 /**
  * Check ScriptHookV version
@@ -24,17 +28,31 @@ new Elysia().use(cron(cronJob)).listen(4000);
  * @returns
  */
 const checkScriptHookVersion = async (): Promise<void> => {
-  const date = format(new Date(), "dd MMMM yyyy HH:mm:ss", { locale: fr });
-  console.log(`${date} | Check script hook version`);
+  const file = Bun.file("version.txt");
 
   const response = await axios.get("http://dev-c.com/gtav/scripthookv/");
-
   const html = response.data;
-  const version: string | undefined = html.match(/v\d+\.\d+\.\d+/g)[0];
+
+  const version: string | undefined = html.match(/v\d+\.\d+\.\d+\.\d+/g)[0];
   const releaseDate: string | undefined = html.match(/\d{4}-\d{2}-\d{2}/g)[0];
 
-  if (releaseDate === format(new Date(), "yyyy-MM-dd")) {
-    sendWebhook(version ?? "Not found", releaseDate ?? "Not found");
+  if (!version) {
+    console.log("Version not found");
+    return;
+  }
+
+  if (file.size === 0) {
+    Bun.write("version.txt", version);
+  }
+
+  const currentVersion = await file.text();
+
+  if (
+    releaseDate === format(new Date(), "yyyy-MM-dd") &&
+    version !== currentVersion
+  ) {
+    sendWebhook(version, releaseDate ?? "Not found");
+    Bun.write("version.txt", version);
   }
 };
 
@@ -54,7 +72,7 @@ const sendWebhook = async (
   const url = `https://discordapp.com/api/webhooks/${id}/${token}`;
 
   const data = {
-    content: `ScriptHookV ${version} released on ${releaseDate}`,
+    content: `ScriptHookV ${version} released on ${releaseDate} | http://dev-c.com/gtav/scripthookv/`,
     username: "ScriptHookV",
   };
 
